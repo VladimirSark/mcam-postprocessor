@@ -568,6 +568,7 @@ sav_spdir    : 0     #Spindle direction saved
 sav_omitsq   : 0     #Omitseq saved
 sav_subout   : 0     #Saved subout
 sav_frc_wcs  : 0     #Force work offset flag saved
+lathe_toolno : 0     #Okuma lathe tool output value (Tttwwgg)
 sav_cutpos2  : 0     #Patch to handle cutpos2 flag through null toolchnages
 cir_at_zero  : 0     #Arc center at centerline in XY plane, -1 if not plane 0
 pnt_at_zero  : 0     #Position at centerline with milling
@@ -1294,6 +1295,7 @@ fs2 20  1 0 1 0n    #Integer, forced output
 fs2 21  2.2 2.2lt   #Decimal, force two leading & two trailing (time2)
 fs2 22  2 0 2 0t    #Integer, force trailing                   (hour)
 fs2 23  0 2 0 2lt   #Integer, force leading & trailing         (min)
+fs2 25  6 0 6 0l    #Integer, force six leading (Okuma lathe tool token)
 
 # This format statement is used for sequence number output
 # Number of places output is determined by value for "Increment Sequence Number" in CD
@@ -1304,6 +1306,7 @@ fs2 24  0^7 0^7     #Decimal, 7 place, omit decimal if integer value
 # Toolchange / NC output Variable Formats
 # --------------------------------------------------------------------------
 fmt  "T" 7  toolno      #Tool number
+fmt  "T" 25 lathe_toolno #Lathe tool number (Okuma 6-digit style)
 fmt  "G" 4  g_wcs       #WCS G address
 fmt  "P" 4  p_wcs       #WCS P address
 fmt  "S" 4  speed       #Spindle Speed
@@ -1605,8 +1608,8 @@ ltlchg$          #Toolchange, lathe
         absinc$ = sav_absinc
         copy_x = vequ(sav_xh)
         ]
-      toolno = t$ * 100 + tloffno$
-      pbld, n$, *sgcode, *toolno, e$
+      lathe_toolno = t$ * 10000 + tloffno$ * 100 + tloffno$
+      pbld, n$, *sgcode, *lathe_toolno, e$
       pbld, n$, pfsgplane, e$
       pcaxis_off_l  #Postblock for lathe transition
       pcom_moveb    #Reset machine position, set inc. from last position
