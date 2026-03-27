@@ -1107,7 +1107,7 @@ fstrsel sg97 css_actv$ sg9697 2 -1
 # --------------------------------------------------------------------------
 # Feed mode G code selection
 sg98    : "G98"      #UPM
-sg99    : "G99"      #UPR
+sg99    : ""         #UPR suppressed for Okuma
 sgfeed  : ""         #Target string
 
 fstrsel sg98 ipr_actv$ sgfeed 2 -1
@@ -1555,7 +1555,6 @@ pheader$         #Start of file
       *progno$, e$
       sopen_prn, "PROGRAM NAME - ", sprogname$, sclose_prn, e$
       sopen_prn, "DATE - ", date$, "  TIME - ", time$, sclose_prn, e$
-      pbld, n$, *smetric, e$
       miscopflag = one
       ]
       !sub_seq_typ$
