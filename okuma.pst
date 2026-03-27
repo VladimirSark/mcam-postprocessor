@@ -1562,6 +1562,8 @@ lsof0$           #Start of file for tool zero, lathe
 
 lsof$            #Start of file for non-zero tool number, lathe
       sav_cc_1013 = cc_1013$
+      pbld, n$, "M216", e$
+      pbld, n$, "G00 X600 Z400", e$
       ltlchg$
 
 msof0$           #Start of file for tool zero, mill
@@ -1882,8 +1884,11 @@ pl_retract      #Retract tool based on next tool gcode, lathe (see ptoolend)
         #Retract to reference return
         pbld, n$, `sgcode, psccomp, e$
         if home_type = m_one, pbld, n$, *toolno, e$
-        pcan1, pbld, n$, *sg28ref, "U0.", [if y_axis_mch, "V0."], "W0.",
-          pnullstop, strcantext, e$
+        if n1_gcode = 1003, #EOF/tooltable boundary
+          pbld, n$, "G00 X600 Z400", pnullstop, strcantext, e$
+        else,
+          pcan1, pbld, n$, *sg28ref, "U0.", [if y_axis_mch, "V0."], "W0.",
+            pnullstop, strcantext, e$
         cutoff_proc = zero  #Reset flag if we are retracted
         if home_type > m_one, pbld, n$, *toolno, e$
         ]
@@ -1947,7 +1952,7 @@ peof0$           #End of file for tool zero
 peof$            #End of file for non-zero tool
       ptoolend$
       comment$
-      n$, "M30", e$
+      n$, "M02", e$
       if subs_before, #Merge subs before main program
         [             #At this point, the NC / Main program level is blank (Main prg was written to ext with subs before)
         subout$ = zero
