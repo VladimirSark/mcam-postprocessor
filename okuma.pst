@@ -1830,29 +1830,32 @@ ptoolend$        #Read from buffer 1 for prv_, current and next tool info
             ]
           sav_gcode = gcode$
           gcode$ = zero
-          if v9_coolant, [coolant$ = zero, pbld, n$, pscool, e$]
-          if all_cool_off,
+          if n1_gcode <> 1003, #Non-EOF tool end
             [
-            #all coolant off with a single off code here
-            if coolant_on, pbld, n$, sall_cool_off, e$
-            coolant_on = zero
-            ]
-          else,
-            [
-            local_int = zero
-            coolantx = zero
-            while local_int < 20 & coolant_on > 0,
+            if v9_coolant, [coolant$ = zero, pbld, n$, pscool, e$]
+            if all_cool_off,
               [
-              coolantx = and(2^local_int, coolant_on)
-              local_int = local_int + one
-              if coolantx > zero,
-                [
-                coolantx = local_int
-                pbld, n$, scoolantx, e$
-                ]
-              coolantx = zero
+              #all coolant off with a single off code here
+              if coolant_on, pbld, n$, sall_cool_off, e$
+              coolant_on = zero
               ]
-            coolant_on = zero
+            else,
+              [
+              local_int = zero
+              coolantx = zero
+              while local_int < 20 & coolant_on > 0,
+                [
+                coolantx = and(2^local_int, coolant_on)
+                local_int = local_int + one
+                if coolantx > zero,
+                  [
+                  coolantx = local_int
+                  pbld, n$, scoolantx, e$
+                  ]
+                coolantx = zero
+                ]
+              coolant_on = zero
+              ]
             ]
           if posttype$ = two, pl_retract
           else, pm_retract
@@ -1888,7 +1891,11 @@ pl_retract      #Retract tool based on next tool gcode, lathe (see ptoolend)
         pbld, n$, `sgcode, psccomp, e$
         if home_type = m_one, pbld, n$, *toolno, e$
         if n1_gcode = 1003, #EOF/tooltable boundary
-          pbld, n$, "G00 X600 Z400", pnullstop, strcantext, e$
+          [
+          pbld, n$, *sm05, e$
+          pbld, n$, "M09", e$
+          pbld, n$, "G00 X600 Z400", e$
+          ]
         else,
           pcan1, pbld, n$, *sg28ref, "U0.", [if y_axis_mch, "V0."], "W0.",
             pnullstop, strcantext, e$
