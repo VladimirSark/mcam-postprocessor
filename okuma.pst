@@ -1829,7 +1829,7 @@ ptoolend$        #Read from buffer 1 for prv_, current and next tool info
             ]
           sav_gcode = gcode$
           gcode$ = zero
-          if n1_gcode <> 1003, #Non-EOF tool end
+          if n1_gcode <> 1003 & posttype$ <> two, #Non-EOF mill tool end
             [
             if v9_coolant, [coolant$ = zero, pbld, n$, pscool, e$]
             if all_cool_off,
@@ -1896,8 +1896,11 @@ pl_retract      #Retract tool based on next tool gcode, lathe (see ptoolend)
           pbld, n$, "G00 X600 Z400", e$
           ]
         else,
-          pcan1, pbld, n$, *sg28ref, "U0.", [if y_axis_mch, "V0."], "W0.",
-            pnullstop, strcantext, e$
+          [
+          pbld, n$, *sm05, e$
+          pbld, n$, "M09", e$
+          pbld, n$, "G00 X600 Z400", e$
+          ]
         cutoff_proc = zero  #Reset flag if we are retracted
         if home_type > m_one, pbld, n$, *toolno, e$
         ]
