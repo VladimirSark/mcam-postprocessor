@@ -568,6 +568,7 @@ sav_spdir    : 0     #Spindle direction saved
 sav_omitsq   : 0     #Omitseq saved
 sav_subout   : 0     #Saved subout
 sav_frc_wcs  : 0     #Force work offset flag saved
+lathe_toolno : 0     #Okuma lathe tool output value (Tttwwgg)
 sav_cutpos2  : 0     #Patch to handle cutpos2 flag through null toolchnages
 cir_at_zero  : 0     #Arc center at centerline in XY plane, -1 if not plane 0
 pnt_at_zero  : 0     #Position at centerline with milling
@@ -593,6 +594,9 @@ xmaj_thd     : 0     #X major dia. from parameters
 zstrt_thd    : 0     #Z start from parameters
 zend_thd     : 0     #Z end from parameters
 face_thd     : 0     #Face thread from parameters
+thddepth_ok  : 0     #Okuma thread H output (decimal)
+thdfirst_ok  : 0     #Okuma thread D output (decimal)
+thdfinish_ok : 0     #Okuma thread U output (decimal)
 
 #Spindle variables
 max_speed    : 0     #Maximum spindle speed (set by turret definition)
@@ -874,9 +878,11 @@ fbuf 3 0 256 1 1     #Buffer 3
 # --------------------------------------------------------------------------
 #Address string definitions
 stra         : "A"   #String for address A
+strb         : "B"   #String for address B
 strd         : "D"   #String for address D
 stre         : "E"   #String for address E
 strf         : "F"   #String for address F
+strh         : "H"   #String for address H
 stri         : "I"   #String for address I
 strk         : "K"   #String for address K
 strm         : "M"   #String for address M
@@ -1106,7 +1112,7 @@ fstrsel sg97 css_actv$ sg9697 2 -1
 # --------------------------------------------------------------------------
 # Feed mode G code selection
 sg98    : "G98"      #UPM
-sg99    : "G99"      #UPR
+sg99    : ""         #UPR suppressed for Okuma
 sgfeed  : ""         #Target string
 
 fstrsel sg98 ipr_actv$ sgfeed 2 -1
@@ -1294,6 +1300,7 @@ fs2 20  1 0 1 0n    #Integer, forced output
 fs2 21  2.2 2.2lt   #Decimal, force two leading & two trailing (time2)
 fs2 22  2 0 2 0t    #Integer, force trailing                   (hour)
 fs2 23  0 2 0 2lt   #Integer, force leading & trailing         (min)
+fs2 25  6 0 6 0l    #Integer, force six leading (Okuma lathe tool token)
 
 # This format statement is used for sequence number output
 # Number of places output is determined by value for "Increment Sequence Number" in CD
@@ -1304,6 +1311,7 @@ fs2 24  0^7 0^7     #Decimal, 7 place, omit decimal if integer value
 # Toolchange / NC output Variable Formats
 # --------------------------------------------------------------------------
 fmt  "T" 7  toolno      #Tool number
+fmt  "T" 25 lathe_toolno #Lathe tool number (Okuma 6-digit style)
 fmt  "G" 4  g_wcs       #WCS G address
 fmt  "P" 4  p_wcs       #WCS P address
 fmt  "S" 4  speed       #Spindle Speed
@@ -1366,6 +1374,9 @@ fmt  "P" 2  thddepth$   #Thread height absolute
 fmt  "Q" 2  thdfirst$   #First depth cut in thread
 fmt  "Q" 2  thdlast$    #Last depth cut in thread
 fmt  "R" 2  thdfinish$  #G76 thread finish allowance
+fmt  "H" 11 thddepth_ok  #Okuma thread height output (decimal)
+fmt  "D" 11 thdfirst_ok  #Okuma first pass output (decimal)
+fmt  "U" 11 thdfinish_ok #Okuma finish output (decimal)
 fmt  "R" 3  thdrdlt     #Thread R delta G92 and G76
 fmt  "U" 3  thd_dirx    #Incremental X move for G76 mult starts
 fmt  "W" 3  thd_dirz    #Incremental Z move for G76 mult starts
@@ -1549,27 +1560,9 @@ ptime           #Convert 24-hour time format into 12-hour AM/PM format
 pheader$         #Start of file
       if miscopflag = zero,
       [
-      if subs_before, " ", e$ #header character is output from peof when subs are output before main
-        else, "%", e$
-      sav_spc = spaces$
-      spaces$ = 0
-      #*progno$, " (", sprogname$, sclose_prn, e$
       *progno$, e$
       sopen_prn, "PROGRAM NAME - ", sprogname$, sclose_prn, e$
-      sopen_prn, "DATE=DD-MM-YY - ", date$, " TIME=HH:MM - ", time$, sclose_prn, e$ #Date and time output Ex. 12-02-05 15:52
-      #sopen_prn, "DATE - ", month$, "-", day$, "-", year$, sclose_prn, e$  #Date output as month,day,year - Ex. 02-12-05
-      #sopen_prn, "DATE - ", *smonth, " ", day$, " ", *year2, sclose_prn, e$ #Date output as month,day,year - Ex. Feb. 12 2005
-      #sopen_prn, "TIME - ", time$, sclose_prn, e$  #24 hour time output - Ex. 15:52
-      #sopen_prn, "TIME - ", ptime sclose_prn, e$  #12 hour time output 3:52 PM
-      spathnc$ = ucase(spathnc$)
-      smcname$ = ucase(smcname$)
-      stck_matl$ = ucase(stck_matl$)
-      snamenc$ = ucase(snamenc$)
-      sopen_prn, "MCX FILE - ", *smcpath$, *smcname$, *smcext$, sclose_prn, e$
-      sopen_prn, "NC FILE - ", *spathnc$, *snamenc$, *sextnc$, sclose_prn, e$
-      sopen_prn, "MATERIAL - ", *stck_matl$, sclose_prn, e$
-      spaces$ = sav_spc
-      pbld, n$, *smetric, e$
+      sopen_prn, "DATE - ", date$, "  TIME - ", time$, sclose_prn, e$
       miscopflag = one
       ]
       !sub_seq_typ$
@@ -1579,6 +1572,8 @@ lsof0$           #Start of file for tool zero, lathe
 
 lsof$            #Start of file for non-zero tool number, lathe
       sav_cc_1013 = cc_1013$
+      pbld, n$, "M216", e$
+      pbld, n$, "G00 X600 Z400", e$
       ltlchg$
 
 msof0$           #Start of file for tool zero, mill
@@ -1620,8 +1615,8 @@ ltlchg$          #Toolchange, lathe
         absinc$ = sav_absinc
         copy_x = vequ(sav_xh)
         ]
-      toolno = t$ * 100 + tloffno$
-      pbld, n$, *sgcode, *toolno, e$
+      lathe_toolno = t$ * 10000 + t$ * 100 + tloffno$
+      pbld, n$, *sgcode, *lathe_toolno, e$
       pbld, n$, pfsgplane, e$
       pcaxis_off_l  #Postblock for lathe transition
       pcom_moveb    #Reset machine position, set inc. from last position
@@ -1842,29 +1837,32 @@ ptoolend$        #Read from buffer 1 for prv_, current and next tool info
             ]
           sav_gcode = gcode$
           gcode$ = zero
-          if v9_coolant, [coolant$ = zero, pbld, n$, pscool, e$]
-          if all_cool_off,
+          if n1_gcode <> 1003 & posttype$ <> two, #Non-EOF mill tool end
             [
-            #all coolant off with a single off code here
-            if coolant_on, pbld, n$, sall_cool_off, e$
-            coolant_on = zero
-            ]
-          else,
-            [
-            local_int = zero
-            coolantx = zero
-            while local_int < 20 & coolant_on > 0,
+            if v9_coolant, [coolant$ = zero, pbld, n$, pscool, e$]
+            if all_cool_off,
               [
-              coolantx = and(2^local_int, coolant_on)
-              local_int = local_int + one
-              if coolantx > zero,
-                [
-                coolantx = local_int
-                pbld, n$, scoolantx, e$
-                ]
-              coolantx = zero
+              #all coolant off with a single off code here
+              if coolant_on, pbld, n$, sall_cool_off, e$
+              coolant_on = zero
               ]
-            coolant_on = zero
+            else,
+              [
+              local_int = zero
+              coolantx = zero
+              while local_int < 20 & coolant_on > 0,
+                [
+                coolantx = and(2^local_int, coolant_on)
+                local_int = local_int + one
+                if coolantx > zero,
+                  [
+                  coolantx = local_int
+                  pbld, n$, scoolantx, e$
+                  ]
+                coolantx = zero
+                ]
+              coolant_on = zero
+              ]
             ]
           if posttype$ = two, pl_retract
           else, pm_retract
@@ -1899,8 +1897,18 @@ pl_retract      #Retract tool based on next tool gcode, lathe (see ptoolend)
         #Retract to reference return
         pbld, n$, `sgcode, psccomp, e$
         if home_type = m_one, pbld, n$, *toolno, e$
-        pcan1, pbld, n$, *sg28ref, "U0.", [if y_axis_mch, "V0."], "W0.",
-          pnullstop, strcantext, e$
+        if n1_gcode = 1003, #EOF/tooltable boundary
+          [
+          pbld, n$, *sm05, e$
+          pbld, n$, "M09", e$
+          pbld, n$, "G00 X600 Z400", e$
+          ]
+        else,
+          [
+          pbld, n$, *sm05, e$
+          pbld, n$, "M09", e$
+          pbld, n$, "G00 X600 Z400", e$
+          ]
         cutoff_proc = zero  #Reset flag if we are retracted
         if home_type > m_one, pbld, n$, *toolno, e$
         ]
@@ -1964,7 +1972,7 @@ peof0$           #End of file for tool zero
 peof$            #End of file for non-zero tool
       ptoolend$
       comment$
-      n$, "M30", e$
+      n$, "M02", e$
       if subs_before, #Merge subs before main program
         [             #At this point, the NC / Main program level is blank (Main prg was written to ext with subs before)
         subout$ = zero
@@ -1986,29 +1994,8 @@ peof$            #End of file for non-zero tool
       subout$ = zero
       "%", e$
 
-pwcs            #G54+ coordinate setting at toolchange
-      if home_type > one,
-        [
-        sav_frc_wcs = force_wcs
-        # Force off for these cases
-        if sub_level$ > zero | lcc_compok = two, force_wcs = zero
-        if workofs$ <> prv_workofs$ | (force_wcs & toolchng),
-          [
-          if sub_level$, result = mprint(swrkserror)
-          if workofs$ < six,
-            [
-            g_wcs = workofs$ + 54
-            *g_wcs
-            ]
-          else,
-            [
-            p_wcs = workofs$ - five
-            "G54.1", *p_wcs
-            ]
-          ]
-        force_wcs = sav_frc_wcs
-        !workofs$
-        ]
+pwcs            #OSP version - suppress Fanuc G54/G54.1 output
+      !workofs$
 
 #Rc1 is used to flag the SOF, rc1 = two at SOF
 pcaxis_off_l    #Toolchange C axis disable, lathe, check prv_ to current
@@ -3338,14 +3325,15 @@ pg76nstart      #G76 threading, for multiple starts
       pbld, n$, *sgcode, thd_dirx, thd_dirz, e$
 
 pg76old         #G76 threading old style
-      pbld, n$, *sthdgcode, pfxout, pfzout, *thdrdlt, *thddepth$,
-        *thdfirst$, *thdang, pffr, e$
+      thddepth_ok = thddepth$
+      thdfirst_ok = thdfirst$
+      thdfinish_ok = thdfinish$
+      result = nwadrs(strb, thdang)
+      pbld, n$, *sg71, pfxout, pfzout, *thddepth_ok, *thdfirst_ok,
+        *thdfinish_ok, *thdang, pffr, "M22", "M74", "M33", e$
 
 pg76new         #G76 threading new style
-      pbld, n$, *sthdgcode, *nspring$, *thdpull, *thdang, *thdlast$,
-        *thdfinish$, e$
-      pbld, n$, *sthdgcode, pfxout, pfzout, *thddepth$, *thdfirst$,
-        *thdrdlt, pffr, e$
+      pg76old
 
 # --------------------------------------------------------------------------
 # Lathe canned cycle output
