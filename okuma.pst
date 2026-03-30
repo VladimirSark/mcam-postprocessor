@@ -1615,7 +1615,7 @@ ltlchg$          #Toolchange, lathe
         absinc$ = sav_absinc
         copy_x = vequ(sav_xh)
         ]
-      lathe_toolno = t$ * 10000 + tloffno$ * 100 + tloffno$
+      lathe_toolno = t$ * 10000 + t$ * 100 + tloffno$
       pbld, n$, *sgcode, *lathe_toolno, e$
       pbld, n$, pfsgplane, e$
       pcaxis_off_l  #Postblock for lathe transition
