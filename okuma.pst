@@ -594,6 +594,9 @@ xmaj_thd     : 0     #X major dia. from parameters
 zstrt_thd    : 0     #Z start from parameters
 zend_thd     : 0     #Z end from parameters
 face_thd     : 0     #Face thread from parameters
+thddepth_ok  : 0     #Okuma thread H output (decimal)
+thdfirst_ok  : 0     #Okuma thread D output (decimal)
+thdfinish_ok : 0     #Okuma thread U output (decimal)
 
 #Spindle variables
 max_speed    : 0     #Maximum spindle speed (set by turret definition)
@@ -1371,6 +1374,9 @@ fmt  "P" 2  thddepth$   #Thread height absolute
 fmt  "Q" 2  thdfirst$   #First depth cut in thread
 fmt  "Q" 2  thdlast$    #Last depth cut in thread
 fmt  "R" 2  thdfinish$  #G76 thread finish allowance
+fmt  "H" 11 thddepth_ok  #Okuma thread height output (decimal)
+fmt  "D" 11 thdfirst_ok  #Okuma first pass output (decimal)
+fmt  "U" 11 thdfinish_ok #Okuma finish output (decimal)
 fmt  "R" 3  thdrdlt     #Thread R delta G92 and G76
 fmt  "U" 3  thd_dirx    #Incremental X move for G76 mult starts
 fmt  "W" 3  thd_dirz    #Incremental Z move for G76 mult starts
@@ -3319,12 +3325,12 @@ pg76nstart      #G76 threading, for multiple starts
       pbld, n$, *sgcode, thd_dirx, thd_dirz, e$
 
 pg76old         #G76 threading old style
-      result = nwadrs(strh, thddepth$)
-      result = nwadrs(strd, thdfirst$)
-      result = nwadrs(stru, thdfinish$)
+      thddepth_ok = thddepth$
+      thdfirst_ok = thdfirst$
+      thdfinish_ok = thdfinish$
       result = nwadrs(strb, thdang)
-      pbld, n$, *sg71, pfxout, pfzout, *thddepth$, *thdfirst$,
-        *thdfinish$, *thdang, pffr, "M22", "M74", "M33", e$
+      pbld, n$, *sg71, pfxout, pfzout, *thddepth_ok, *thdfirst_ok,
+        *thdfinish_ok, *thdang, pffr, "M22", "M74", "M33", e$
 
 pg76new         #G76 threading new style
       pg76old
