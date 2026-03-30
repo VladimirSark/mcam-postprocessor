@@ -875,9 +875,11 @@ fbuf 3 0 256 1 1     #Buffer 3
 # --------------------------------------------------------------------------
 #Address string definitions
 stra         : "A"   #String for address A
+strb         : "B"   #String for address B
 strd         : "D"   #String for address D
 stre         : "E"   #String for address E
 strf         : "F"   #String for address F
+strh         : "H"   #String for address H
 stri         : "I"   #String for address I
 strk         : "K"   #String for address K
 strm         : "M"   #String for address M
@@ -3317,14 +3319,15 @@ pg76nstart      #G76 threading, for multiple starts
       pbld, n$, *sgcode, thd_dirx, thd_dirz, e$
 
 pg76old         #G76 threading old style
-      pbld, n$, *sthdgcode, pfxout, pfzout, *thdrdlt, *thddepth$,
-        *thdfirst$, *thdang, pffr, e$
+      result = nwadrs(strh, thddepth$)
+      result = nwadrs(strd, thdfirst$)
+      result = nwadrs(stru, thdfinish$)
+      result = nwadrs(strb, thdang)
+      pbld, n$, *sg71, pfxout, pfzout, *thddepth$, *thdfirst$,
+        *thdfinish$, *thdang, pffr, "M22", "M74", "M33", e$
 
 pg76new         #G76 threading new style
-      pbld, n$, *sthdgcode, *nspring$, *thdpull, *thdang, *thdlast$,
-        *thdfinish$, e$
-      pbld, n$, *sthdgcode, pfxout, pfzout, *thddepth$, *thdfirst$,
-        *thdrdlt, pffr, e$
+      pg76old
 
 # --------------------------------------------------------------------------
 # Lathe canned cycle output
