@@ -1683,6 +1683,7 @@ mtlchg$          #Toolchange, mill
       pbld, n$, pfsgplane, e$
       pcom_moveb    #Reset machine position, set inc. from last position
       pcaxis_on_m   #Postblock for mill transition
+      pbld, n$, "G94 M146 M15 M08", e$  #Stage A milling startup state
       pcan
       if millcc, cabs = zero, cinc = zero  #Force C0 if G12.1/G07.1
       sav_absinc = absinc$
