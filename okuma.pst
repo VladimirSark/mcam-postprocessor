@@ -1700,20 +1700,23 @@ mtlchg$          #Toolchange, mill
       if millcc, cabs = zero, cinc = zero  #Force C0 if G12.1/G07.1
       sav_absinc = absinc$
       if home_type > one, absinc$ = zero
+      pspindle
+      speed = speedrpm
+      result = nwadrs(strsb, speed)
       if millcc & abs(cuttype) = two,
         [
         pcan1, pbld, n$, *sgcode, pwcs, pfzout, strcantext, e$
         pmillccb #Set mill conversion before first XY move
-        pbld, n$, *sgcode, pfxout, pyout, strcantext, e$
+        pbld, n$, *sgcode, pfxout, pyout, *speed, strcantext, e$
         ]
       else,
-        pcan1, pbld, n$, *sgcode, pwcs, pfxout, pyout, pfzout, strcantext, e$
+        pcan1, pbld, n$, *sgcode, pwcs, pfxout, pyout, pfzout, *speed, strcantext, e$
+      result = nwadrs(strs, speed)
       pbld, n$, *sg41, "M16", *sm13, e$
       pbld, n$, pfcout, e$
       pindex
       pbld, n$, pscool, e$
       pspindle
-      prpm
       pcom_movea    #Update previous, pcan2
       ps_inc_calc   #Reset current
       absinc$ = sav_absinc
@@ -2322,18 +2325,16 @@ plinout         #Output to NC, linear movement - feed
           if mill_z_only, #Plunge move
             [
             pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
-              pyout, pzout, pcout, pfr, pscool, strcantext, e$
-            pbld, n$, "M147", e$
+              pyout, pzout, pcout, pfr, pscool, "M147", strcantext, e$
             mill_plunge_done = one
             ]
           else, #Pre-contour or contour-start move
             [
             if mill_plunge_done & mill_xy_move,
               [
-              pbld, n$, "M146", e$
               mill_contour_active = one
               pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
-                pyout, pzout, pcout, pfr, pscool, strcantext, e$
+                pyout, pzout, pcout, pfr, pscool, "M146", strcantext, e$
               ]
             else,
               pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
@@ -2344,44 +2345,18 @@ plinout         #Output to NC, linear movement - feed
       else,
         pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pwcs, pxout,
           pyout, pzout, pcout, pfr, pscool, strcantext, e$
-      if posttype$ <> two & mill_first_feed_done = zero,
-        [
-        pbld, n$, "M147", e$
-        mill_first_feed_done = one
-        pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
-          pyout, pzout, pcout, pfr, pscool, strcantext, e$
-        mill_plunge_done = one
-        ]
-      else, if posttype$ <> two & mill_plunge_done & not(mill_contour_active),
-        [
-        pbld, n$, "M146", e$
-        mill_contour_active = one
-        if posttype$ <> two & mill_contour_active,
-        pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
-          pyout, pzout, pcout, pfr, pscool, strcantext, e$
-        else,
-          pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
-            pyout, pzout, pcout, pfr, pscool, strcantext, e$
-        ]
-      else,
-        [
-        if posttype$ <> two & mill_contour_active,
-          pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
-            pyout, pzout, pcout, pfr, pscool, strcantext, e$
-        else,
-        pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pwcs, pxout,
-          pyout, pzout, pcout, pfr, pscool, strcantext, e$
-        ]
       if rpd_typ$ = 7, ptool_insp      #Tool inspection point
 
 pcirout         #Output to NC, circular interpolation
       if posttype$ <> two & mill_plunge_done & not(mill_contour_active),
         [
-        pbld, n$, "M146", e$
         mill_contour_active = one
+        pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pxout,
+          pyout, pzout, pcout, parc, pfr, pscool, "M146", strcantext, e$
         ]
-      pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pxout,
-        pyout, pzout, pcout, parc, pfr, pscool, strcantext, e$
+      else,
+        pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pxout,
+          pyout, pzout, pcout, parc, pfr, pscool, strcantext, e$
 
 pl_ncoutput     #Movement output
       #pcc_capture   #Capture LCC ends, stop output RLCC
@@ -2829,7 +2804,7 @@ pmillccb        #Cross/Face canned cycle code, before
         if abs(cuttype) = two,
           [
           #Face canned cycle start code, G112 (break ramp)
-          pbld, n$, *sg112, "C0", e$
+          pbld, n$, "G137", "C0", e$
           prv_xabs = c9k, prv_xinc = c9k, prv_cabs = c9k, prv_cinc = c9k
           compok = one
           ]
