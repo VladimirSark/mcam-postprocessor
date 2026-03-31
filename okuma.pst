@@ -570,6 +570,7 @@ sav_subout   : 0     #Saved subout
 sav_frc_wcs  : 0     #Force work offset flag saved
 lathe_toolno : 0     #Okuma lathe tool output value (Tttwwgg)
 mill_first_feed_done : 0 #Milling first feed/plunge clamp output flag
+mill_plunge_done : 0     #Milling first plunge feed completed flag
 mill_contour_active : 0  #Milling contour mode active flag
 mill_retract_started : 0 #Milling retract-start flag
 sav_cutpos2  : 0     #Patch to handle cutpos2 flag through null toolchnages
@@ -1654,6 +1655,7 @@ ltlchg$          #Toolchange, lathe
 mtlchg$          #Toolchange, mill
       toolchng = one
       mill_first_feed_done = zero
+      mill_plunge_done = zero
       mill_contour_active = zero
       mill_retract_started = zero
       gcode$ = zero
@@ -1696,7 +1698,15 @@ mtlchg$          #Toolchange, mill
       if millcc, cabs = zero, cinc = zero  #Force C0 if G12.1/G07.1
       sav_absinc = absinc$
       if home_type > one, absinc$ = zero
-      pcan1, pbld, n$, *sgcode, pwcs, pfxout, pyout, pfzout, strcantext, e$
+      if millcc & abs(cuttype) = two,
+        [
+        pcan1, pbld, n$, *sgcode, pwcs, pfzout, strcantext, e$
+        pmillccb #Set mill conversion before first XY move
+        pbld, n$, *sgcode, pfxout, pyout, strcantext, e$
+        ]
+      else,
+        pcan1, pbld, n$, *sgcode, pwcs, pfxout, pyout, pfzout, strcantext, e$
+      pbld, n$, *sg41, "M16", *sm13, e$
       pbld, n$, pfcout, e$
       pindex
       pbld, n$, pscool, e$
@@ -1771,6 +1781,7 @@ ltlchg0$         #Call from NCI null tool change, lathe
 mtlchg0$         #Call from NCI null tool change, mill
       toolchng0 = one
       mill_first_feed_done = zero
+      mill_plunge_done = zero
       mill_contour_active = zero
       mill_retract_started = zero
       if prv_millcc & (not(millcc) | cuttype <> prv_cuttype | (millcc & spindle_no$ <> prv_spindle_no$)),
@@ -1800,6 +1811,7 @@ mtlchg0$         #Call from NCI null tool change, mill
         ]
       pindex
       ppos_cax_lin  #Position C axis, toolplane or CL
+      pbld, n$, *sg41, "M16", *sm13, e$
       if millcc,
         [
         pmillccb  #Set mill conversion
@@ -1843,10 +1855,7 @@ ptoolend$        #Read from buffer 1 for prv_, current and next tool info
         if n1_gcode <> 1000,
           [
           toolno = t$ * 100 + zero
-          if millcc,
-            [
-            pmillcca  #End mill conversion
-            ]
+          #Delay mill conversion cancel until after retract to keep G136 after clear
           sav_gcode = gcode$
           gcode$ = zero
           if n1_gcode <> 1003 & posttype$ <> two, #Non-EOF mill tool end
@@ -1876,14 +1885,15 @@ ptoolend$        #Read from buffer 1 for prv_, current and next tool info
               coolant_on = zero
               ]
             ]
+          if posttype$ = two, pl_retract
+          else, pm_retract
           if posttype$ <> two,
             [
+            if millcc, pmillcca
             pbld, n$, "M146", e$
             pbld, n$, "G95 M12 M09", e$
             pbld, n$, "M109", e$
             ]
-          if posttype$ = two, pl_retract
-          else, pm_retract
           if n1_gcode <> 1003,
             [
             if prog_stop = 1, pbld, n$, *sm01, e$
@@ -2294,25 +2304,36 @@ prapidout       #Output to NC, linear movement - rapid
 plinout         #Output to NC, linear movement - feed
       if posttype$ <> two & mill_first_feed_done = zero,
         [
-        pbld, n$, *sg41, "M16", *sm13, e$
         pbld, n$, "M147", e$
         mill_first_feed_done = one
+        pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
+          pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        mill_plunge_done = one
         ]
-      if posttype$ <> two & mill_first_feed_done & not(mill_contour_active),
+      else, if posttype$ <> two & mill_plunge_done & not(mill_contour_active),
         [
         pbld, n$, "M146", e$
         mill_contour_active = one
-        ]
-      if posttype$ <> two & mill_contour_active,
+        if posttype$ <> two & mill_contour_active,
         pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
           pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        else,
+          pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
+            pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        ]
       else,
+        [
+        if posttype$ <> two & mill_contour_active,
+          pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
+            pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        else,
         pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pwcs, pxout,
           pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        ]
       if rpd_typ$ = 7, ptool_insp      #Tool inspection point
 
 pcirout         #Output to NC, circular interpolation
-      if posttype$ <> two & mill_first_feed_done & not(mill_contour_active),
+      if posttype$ <> two & mill_plunge_done & not(mill_contour_active),
         [
         pbld, n$, "M146", e$
         mill_contour_active = one
