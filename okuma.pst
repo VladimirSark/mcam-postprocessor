@@ -573,6 +573,8 @@ mill_first_feed_done : 0 #Milling first feed/plunge clamp output flag
 mill_plunge_done : 0     #Milling first plunge feed completed flag
 mill_contour_active : 0  #Milling contour mode active flag
 mill_retract_started : 0 #Milling retract-start flag
+mill_z_only : 0          #Milling motion type flag, Z-only feed move
+mill_xy_move : 0         #Milling motion type flag, XY feed move
 sav_cutpos2  : 0     #Patch to handle cutpos2 flag through null toolchnages
 cir_at_zero  : 0     #Arc center at centerline in XY plane, -1 if not plane 0
 pnt_at_zero  : 0     #Position at centerline with milling
@@ -2302,6 +2304,46 @@ prapidout       #Output to NC, linear movement - rapid
       if rpd_typ$ = 7, ptool_insp      #Tool inspection point
 
 plinout         #Output to NC, linear movement - feed
+      if posttype$ <> two,
+        [
+        mill_z_only = abs(zinc) > vtol$ & abs(xinc) <= vtol$ & abs(yinc) <= vtol$
+        mill_xy_move = abs(xinc) > vtol$ | abs(yinc) > vtol$
+        if mill_contour_active,
+          [
+          if mill_z_only,
+            pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
+              pyout, pzout, pcout, pfr, pscool, strcantext, e$
+          else,
+            pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
+              pyout, pzout, pcout, pfr, pscool, strcantext, e$
+          ]
+        else,
+          [
+          if mill_z_only, #Plunge move
+            [
+            pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
+              pyout, pzout, pcout, pfr, pscool, strcantext, e$
+            pbld, n$, "M147", e$
+            mill_plunge_done = one
+            ]
+          else, #Pre-contour or contour-start move
+            [
+            if mill_plunge_done & mill_xy_move,
+              [
+              pbld, n$, "M146", e$
+              mill_contour_active = one
+              pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
+                pyout, pzout, pcout, pfr, pscool, strcantext, e$
+              ]
+            else,
+              pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
+                pyout, pzout, pcout, pfr, pscool, strcantext, e$
+            ]
+          ]
+        ]
+      else,
+        pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pwcs, pxout,
+          pyout, pzout, pcout, pfr, pscool, strcantext, e$
       if posttype$ <> two & mill_first_feed_done = zero,
         [
         pbld, n$, "M147", e$
