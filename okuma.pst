@@ -1703,7 +1703,7 @@ mtlchg$          #Toolchange, mill
       pspindle
       speed = speedrpm
       result = nwadrs(strsb, speed)
-      if millcc & abs(cuttype) = two,
+      if millcc,
         [
         pcan1, pbld, n$, *sgcode, pwcs, pfzout, strcantext, e$
         pmillccb #Set mill conversion before first XY move
@@ -2800,24 +2800,10 @@ pmillccb        #Cross/Face canned cycle code, before
         millcc_flag = one
         result = newfs(two, cabs)
         result = newfs(two, cinc)
-        #Cross/Face canned cycle start code
-        if abs(cuttype) = two,
-          [
-          #Face canned cycle start code, G112 (break ramp)
-          pbld, n$, "G137", "C0", e$
-          prv_xabs = c9k, prv_xinc = c9k, prv_cabs = c9k, prv_cinc = c9k
-          compok = one
-          ]
-        else,
-          [
-          #Cross canned cycle start code, G107
-          sav_gcode = gcode$, gcode$ = zero
-          sav_cabs = cabs, cabs = zero
-          pbld, n$, pfsgplane, "W0.", "H0.", e$
-          cabs = sav_cabs
-          pbld, n$, *sg107, *crad, e$
-          gcode$ = sav_gcode
-          ]
+        #Coordinate conversion start code for XY conversion milling
+        pbld, n$, "G137", "C0", e$
+        prv_xabs = c9k, prv_xinc = c9k, prv_cabs = c9k, prv_cinc = c9k
+        compok = one
         ]
 
 pmillcca        #Cross/Face canned cycle code, after
