@@ -1211,10 +1211,10 @@ fstrsel sm26 tlstk stlstk 2 -1
 # --------------------------------------------------------------------------
 # Generate string for spindle, mill
 sm52    : "M52"      #Spindle reverse - no coolant
-sm55    : "M55"      #Spindle off     - no coolant
+sm55    : "M12"      #Spindle off     - no coolant
 sm51    : "M51"      #Spindle forward - no coolant
 sm54    : "M54"      #Spindle reverse - coolant
-sm55c   : "M55"      #Spindle off     - coolant
+sm55c   : "M12"      #Spindle off     - coolant
 sm53    : "M53"      #Spindle forward - coolant
 spindle_m : ""       #Target string
 
