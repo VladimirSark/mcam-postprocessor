@@ -1929,8 +1929,8 @@ pm_retract      #Retract tool based on next tool gcode, mill (see ptoolend)
         #Retract to reference return
         pbld, n$, `sgcode, psccomp, e$
         if home_type = m_one, pbld, n$, *toolno, e$
-        pcan1, pbld, n$, *sg28ref, "U0.", [if y_axis_mch, "V0."], "W0.",
-          protretinc, pnullstop, strcantext, e$
+        pcan1, pbld, n$, pnullstop, e$
+        pbld, n$, "G00 X600 Z400", strcantext, e$
         if home_type > m_one, pbld, n$, *toolno, e$
         ]
 
@@ -2004,6 +2004,7 @@ pcaxis_off_l    #Toolchange C axis disable, lathe, check prv_ to current
 pcaxis_on_m     #Toolchange C axis enable, mill, check prv_ to current
       if (rc1 = two | prv_posttype$ = two),
         [
+        pbld, n$, "M110", e$
         pbld, n$, *sm23, e$
         if nextdc$ = three, pbld, n$, "M49", e$  #Disable tap
         ]
@@ -2266,12 +2267,12 @@ prapidout       #Output to NC, linear movement - rapid
       if rpd_typ$ = 7, ptool_insp      #Tool inspection point
 
 plinout         #Output to NC, linear movement - feed
-      pcan1, pbld, n$, psgplane, sgfeed, pexct, psgcode, psccomp, pwcs, pxout,
+      pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pwcs, pxout,
         pyout, pzout, pcout, pfr, pscool, strcantext, e$
       if rpd_typ$ = 7, ptool_insp      #Tool inspection point
 
 pcirout         #Output to NC, circular interpolation
-      pcan1, pbld, n$, psgplane, sgfeed, pexct, psgcode, psccomp, pxout,
+      pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pxout,
         pyout, pzout, pcout, parc, pfr, pscool, strcantext, e$
 
 pl_ncoutput     #Movement output
