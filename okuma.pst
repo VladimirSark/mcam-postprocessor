@@ -1214,10 +1214,10 @@ fstrsel sm26 tlstk stlstk 2 -1
 # --------------------------------------------------------------------------
 # Generate string for spindle, mill
 sm52    : "M52"      #Spindle reverse - no coolant
-sm55    : "M55"      #Spindle off     - no coolant
+sm55    : "M12"      #Spindle off     - no coolant
 sm51    : "M51"      #Spindle forward - no coolant
 sm54    : "M54"      #Spindle reverse - coolant
-sm55c   : "M55"      #Spindle off     - coolant
+sm55c   : "M12"      #Spindle off     - coolant
 sm53    : "M53"      #Spindle forward - coolant
 spindle_m : ""       #Target string
 
@@ -2344,6 +2344,34 @@ plinout         #Output to NC, linear movement - feed
       else,
         pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pwcs, pxout,
           pyout, pzout, pcout, pfr, pscool, strcantext, e$
+      if posttype$ <> two & mill_first_feed_done = zero,
+        [
+        pbld, n$, "M147", e$
+        mill_first_feed_done = one
+        pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
+          pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        mill_plunge_done = one
+        ]
+      else, if posttype$ <> two & mill_plunge_done & not(mill_contour_active),
+        [
+        pbld, n$, "M146", e$
+        mill_contour_active = one
+        if posttype$ <> two & mill_contour_active,
+        pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
+          pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        else,
+          pcan1, pbld, n$, psgplane, pexct, psgcode, psccomp, pwcs, pxout,
+            pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        ]
+      else,
+        [
+        if posttype$ <> two & mill_contour_active,
+          pcan1, pbld, n$, psgplane, pexct, *sg101, psccomp, pwcs, pxout,
+            pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        else,
+        pcan1, pbld, n$, psgplane, [if posttype$ = two, sgfeed], pexct, psgcode, psccomp, pwcs, pxout,
+          pyout, pzout, pcout, pfr, pscool, strcantext, e$
+        ]
       if rpd_typ$ = 7, ptool_insp      #Tool inspection point
 
 pcirout         #Output to NC, circular interpolation
