@@ -1706,14 +1706,19 @@ mtlchg$          #Toolchange, mill
       if millcc,
         [
         pcan1, pbld, n$, *sgcode, pwcs, pfzout, strcantext, e$
-        pmillccb #Set mill conversion before first XY move
+        pbld, n$, "G137", "C0", e$
+        millcc_flag = one
+        result = newfs(two, cabs)
+        result = newfs(two, cinc)
+        prv_xabs = c9k, prv_xinc = c9k, prv_cabs = c9k, prv_cinc = c9k
+        compok = one
         pbld, n$, *sgcode, pfxout, pyout, *speed, strcantext, e$
         ]
       else,
         pcan1, pbld, n$, *sgcode, pwcs, pfxout, pyout, pfzout, *speed, strcantext, e$
       result = nwadrs(strs, speed)
       pbld, n$, *sg41, "M16", *sm13, e$
-      pbld, n$, pfcout, e$
+      if not(millcc), pbld, n$, pfcout, e$
       pindex
       pbld, n$, pscool, e$
       pspindle
@@ -1721,7 +1726,7 @@ mtlchg$          #Toolchange, mill
       ps_inc_calc   #Reset current
       absinc$ = sav_absinc
       c_msng$        #Position single-tool sub, sets inc. current if G54...
-      if millcc, pmillccb #Set mill conversion
+      if millcc & not(millcc_flag), pmillccb #Set mill conversion
       gcode$ = sav_gcode
       toolchng = zero
       !lturret$, !op_id$, !cuttype, !mill5$, !millcc
